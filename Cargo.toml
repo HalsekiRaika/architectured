@@ -6,6 +6,9 @@ members = [
     "server"
 ]
 
+resolver = "2"
+
 [workspace.dependencies]
 anyhow = "1"
 thiserror = "1"
+error-stack = "0.4"

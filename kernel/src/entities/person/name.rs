@@ -20,3 +20,9 @@ impl AsRef<str> for PersonName {
         &self.0
     }
 }
+
+impl Default for PersonName {
+    fn default() -> Self {
+        Self::new(String::new())
+    }
+}

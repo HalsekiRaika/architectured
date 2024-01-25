@@ -6,7 +6,7 @@ pub use self::{
     name::*,
 };
 
-#[derive(Debug, Clone, serde::Serialize, serde::Deserialize, destructure::Destructure)]
+#[derive(Debug, Clone, Default, serde::Serialize, serde::Deserialize, destructure::Destructure, destructure::Mutation)]
 pub struct Person {
     id: PersonId,
     name: PersonName

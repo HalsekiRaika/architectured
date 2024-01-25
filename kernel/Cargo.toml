@@ -7,12 +7,14 @@ edition = "2021"
 
 [dependencies]
 rand = "0.8"
-destructure = "0.1.2"
+destructure = "0.5.5"
 serde = { version = "1", features = ["derive"] }
 
 async-trait = "0.1"
 anyhow = { workspace = true }
 thiserror = { workspace = true }
+error-stack = { workspace = true }
+orbital = "0.1"
 
 [features]
 interface = []

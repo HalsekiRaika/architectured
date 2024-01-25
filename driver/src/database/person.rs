@@ -1,4 +1,5 @@
 use deadpool_redis::{Pool as RedisPool, Connection as RedisConnection, redis};
+use error_stack::{Report, ResultExt};
 use kernel::error::KernelError;
 use kernel::interfaces::repository::PersonRepository;
 use kernel::prelude::entities::{Person, PersonId};
@@ -17,26 +18,30 @@ impl PersonDataBase {
 
 #[async_trait::async_trait]
 impl PersonRepository for PersonDataBase {
-    async fn create(&self, create: &Person) -> Result<(), KernelError> {
-        let mut con = redis_internal::acquire(&self.pool).await?;
+    async fn create(&self, create: &Person) -> Result<(), Report<KernelError>> {
+        let mut con = redis_internal::acquire(&self.pool).await
+            .change_context_lazy(|| KernelError::Driver)?;
         RedisInternalPersonDataBase::upsert(create, &mut con).await?;
         Ok(())
     }
 
-    async fn update(&self, update: &Person) -> Result<(), KernelError> {
-        let mut con = redis_internal::acquire(&self.pool).await?;
+    async fn update(&self, update: &Person) -> Result<(), Report<KernelError>> {
+        let mut con = redis_internal::acquire(&self.pool).await
+            .change_context_lazy(|| KernelError::Driver)?;
         RedisInternalPersonDataBase::upsert(update, &mut con).await?;
         Ok(())
     }
 
-    async fn delete(&self, delete: &PersonId) -> Result<(), KernelError> {
-        let mut con = redis_internal::acquire(&self.pool).await?;
+    async fn delete(&self, delete: &PersonId) -> Result<(), Report<KernelError>> {
+        let mut con = redis_internal::acquire(&self.pool).await
+            .change_context_lazy(|| KernelError::Driver)?;
         RedisInternalPersonDataBase::delete(delete, &mut con).await?;
         Ok(())
     }
 
-    async fn find_by_id(&self, id: &PersonId) -> Result<Option<Person>, KernelError> {
-        let mut con = redis_internal::acquire(&self.pool).await?;
+    async fn find_by_id(&self, id: &PersonId) -> Result<Option<Person>, Report<KernelError>> {
+        let mut con = redis_internal::acquire(&self.pool).await
+            .change_context_lazy(|| KernelError::Driver)?;
         let found = RedisInternalPersonDataBase::find_by_id(id, &mut con).await?;
         Ok(found)
     }

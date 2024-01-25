@@ -1,5 +1,27 @@
 version: '3'
 services:
+  query:
+    image: postgres:16.1-bookworm
+    volumes:
+      - query-vol:/data
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_DB: query
+      POSTGRES_USER: arch123
+      POSTGRES_PASSWORD: arch456
+      POSTGRES_HOST_AUTH_METHOD: trust
+  journal:
+    image: postgres:16.1-bookworm
+    volumes:
+      - journal-vol:/data
+    ports:
+      - "5433:5432"
+    environment:
+      POSTGRES_DB: journal
+      POSTGRES_USER: arch123
+      POSTGRES_PASSWORD: arch456
+      POSTGRES_HOST_AUTH_METHOD: trust
   redis:
     image: redis:7.0.9-alpine
     volumes:
@@ -9,3 +31,5 @@ services:
 
 volumes:
   redis-vol:
+  query-vol:
+  journal-vol:

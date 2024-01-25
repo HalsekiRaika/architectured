@@ -9,7 +9,7 @@ pub struct Handler {
 
 impl Handler {
     pub async fn init() -> Result<Self, ServerError> {
-        let redis_pool = driver::setup()?;
+        let redis_pool = driver::setup_redis()?;
 
         Ok(Self {
             person_db: PersonDataBase::new(redis_pool),
