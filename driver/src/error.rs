@@ -1,8 +1,10 @@
 pub mod compat;
+pub mod internal;
 
 use std::fmt::{Debug, Display, Formatter};
 use error_stack::{Context, Report};
 use kernel::error::KernelError;
+use crate::error::internal::InternalError;
 
 #[derive(Debug)]
 pub enum DriverError {
@@ -11,6 +13,7 @@ pub enum DriverError {
     Redis(Report<deadpool_redis::redis::RedisError>),
     DeadPool,
     Initialize,
+    Internal(Report<InternalError>),
     Other
 }
 
@@ -19,8 +22,9 @@ impl Display for DriverError {
         write!(f, "(driver): ")?;
         match self {
             DriverError::Sqlx(e) => Display::fmt(e, f),
-            DriverError::Serde(e) => write!(f, "{:?}", e),
-            DriverError::Redis(e) => write!(f, "{:?}", e),
+            DriverError::Internal(e) => Display::fmt(e, f),
+            DriverError::Serde(e) => Display::fmt(e, f),
+            DriverError::Redis(e) => Display::fmt(e, f),
             DriverError::DeadPool => write!(f, "describe me"),
             DriverError::Initialize => write!(f, "describe me"),
             DriverError::Other => write!(f, "describe me")
@@ -63,11 +67,9 @@ impl From<DriverError> for Report<CategorizeDriverError> {
     fn from(e: DriverError) -> Self {
         match e {
             DriverError::Sqlx(r) => Report::new(CategorizeDriverError::External).attach_printable(r),
-            DriverError::Serde(r) => Report::new(CategorizeDriverError::External).attach_printable(r),
-            DriverError::Redis(r) => Report::new(CategorizeDriverError::External).attach_printable(r),
-            DriverError::DeadPool => Report::new(CategorizeDriverError::Internal(e)),
-            DriverError::Initialize => Report::new(CategorizeDriverError::Internal(e)),
-            DriverError::Other => Report::new(CategorizeDriverError::Internal(e)),
+            DriverError::Serde(r)        => Report::new(CategorizeDriverError::External).attach_printable(r),
+            DriverError::Redis(r)     => Report::new(CategorizeDriverError::External).attach_printable(r),
+            _ => Report::new(CategorizeDriverError::Internal(e))
         }
     }
 }

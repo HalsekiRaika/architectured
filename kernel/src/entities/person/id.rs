@@ -1,33 +1,29 @@
 use serde::{Deserialize, Serialize};
+use uuid::Uuid;
 
 #[derive(Debug, Clone, Hash, Eq, PartialEq, Serialize, Deserialize)]
-pub struct PersonId(String);
+pub struct PersonId(Uuid);
 
 impl PersonId {
-    pub fn new(id: impl Into<String>) -> Self {
+    pub fn new(id: impl Into<Uuid>) -> Self {
         Self(id.into())
     }
 }
 
-impl From<PersonId> for String {
+impl From<PersonId> for Uuid {
     fn from(value: PersonId) -> Self {
         value.0
     }
 }
 
-impl AsRef<str> for PersonId {
-    fn as_ref(&self) -> &str {
+impl AsRef<Uuid> for PersonId {
+    fn as_ref(&self) -> &Uuid {
         &self.0
     }
 }
 
 impl Default for PersonId {
     fn default() -> Self {
-        use rand::distributions::{Alphanumeric, Distribution};
-        let gen = Alphanumeric.sample_iter(&mut rand::thread_rng())
-            .take(16)
-            .map(char::from)
-            .collect::<String>();
-        Self::new(gen)
+        Self::new(Uuid::new_v4())
     }
 }
