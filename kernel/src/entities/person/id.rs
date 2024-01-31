@@ -1,7 +1,7 @@
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
-#[derive(Debug, Clone, Hash, Eq, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, Hash, Eq, PartialEq, Serialize, Deserialize)]
 pub struct PersonId(Uuid);
 
 impl PersonId {
@@ -19,6 +19,12 @@ impl From<PersonId> for Uuid {
 impl AsRef<Uuid> for PersonId {
     fn as_ref(&self) -> &Uuid {
         &self.0
+    }
+}
+
+impl From<PersonId> for String {
+    fn from(value: PersonId) -> String {
+        format!("{}", value.0)
     }
 }
 
