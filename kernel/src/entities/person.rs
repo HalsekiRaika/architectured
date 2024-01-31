@@ -13,14 +13,8 @@ pub struct Person {
 }
 
 impl Person {
-    pub fn new(
-        id: impl Into<String>,
-        name: impl Into<String>,
-    ) -> Self {
-        Self {
-            id: PersonId::new(id),
-            name: PersonName::new(name),
-        }
+    pub fn new(id: PersonId, name: PersonName) -> Self {
+        Self { id, name, }
     }
 }
 
