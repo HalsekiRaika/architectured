@@ -56,7 +56,7 @@ impl RedisInternalPersonDataBase {
         con: &mut RedisConnection
     ) -> Result<(), DriverError> {
         redis::cmd("SET")
-            .arg(create.id().as_ref())
+            .arg(serde_json::to_string(create.id())?)
             .arg(serde_json::to_string(&create)?)
             .query_async(&mut *con)
             .await?;
@@ -68,7 +68,7 @@ impl RedisInternalPersonDataBase {
         con: &mut RedisConnection
     ) -> Result<(), DriverError> {
         redis::cmd("DEL")
-            .arg(delete.as_ref())
+            .arg(serde_json::to_string(delete)?)
             .query_async(&mut *con)
             .await?;
         Ok(())
@@ -79,7 +79,7 @@ impl RedisInternalPersonDataBase {
         con: &mut RedisConnection
     ) -> Result<Option<Person>, DriverError> {
         let raw: Option<String> = redis::cmd("GET")
-            .arg(id.as_ref())
+            .arg(serde_json::to_string(id)?)
             .query_async(&mut *con)
             .await?;
         let person: Option<Person> = raw
