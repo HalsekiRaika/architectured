@@ -83,11 +83,20 @@ impl InternalPersonEventJournal {
         con: &mut PgConnection
     ) -> Result<(), DriverError> {
         // language=SQL
+        let current = sqlx::query_scalar::<_, i64>(r#"
+            SELECT COUNT(event) from events WHERE stream = $1
+        "#)
+            .bind(stream.as_ref())
+            .fetch_one(&mut *con)
+            .await?;
+
+        // language=SQL
         sqlx::query(r#"
-            INSERT INTO events(stream, event) VALUES ($1, $2)
+            INSERT INTO events(stream, event, version) VALUES ($1, $2, $3)
         "#)
             .bind(stream.as_ref())
             .bind(serde_json::to_value(event)?)
+            .bind(current + 1)
             .execute(&mut *con)
             .await?;
         Ok(())
@@ -185,6 +194,65 @@ mod test {
 
         transaction.rollback().await
             .map_err(DriverError::from)?;
+
+        Ok(())
+    }
+
+    // noinspection DuplicatedCode
+    #[tokio::test]
+    async fn append_parallel() -> Result<(), DriverError> {
+        let id_a = PersonId::default();
+        let id_b = PersonId::default();
+
+        println!("id_a: {:?}", id_a);
+        println!("id_b: {:?}", id_b);
+
+        let pool = create_pool().await?;
+
+        let a: Vec<PersonManipulationEvent> = futures::stream::iter(1..=2500)
+            .map(|i| async move {
+                PersonManipulationEvent::Renamed { name: PersonName::new(format!("test man type.{i}")) }
+            })
+            .buffered(1)
+            .collect::<_>().await;
+
+        let b = a.clone();
+
+        let pool_a = pool.clone();
+        let mut transaction_a = pool_a.begin().await.map_err(DriverError::from)?;
+
+        let ev_1 = PersonManipulationEvent::Created { id: id_a, name: PersonName::new("new account 1") };
+        InternalPersonEventJournal::create(&ev_1, &mut transaction_a).await?;
+
+        let task_a = futures::stream::iter(a)
+            .fold(&mut transaction_a, |con, ev| async move {
+                InternalPersonEventJournal::append(&id_a, &ev, con).await.unwrap();
+                con
+            });
+
+        let pool_b = pool.clone();
+        let mut transaction_b = pool_b.begin().await.map_err(DriverError::from)?;
+
+        let ev_2 = PersonManipulationEvent::Created { id: id_b, name: PersonName::new("new account 1") };
+        InternalPersonEventJournal::create(&ev_2, &mut transaction_b).await?;
+
+        let task_b = futures::stream::iter(b)
+            .fold(&mut transaction_b, |con, ev| async move {
+                InternalPersonEventJournal::append(&id_b, &ev, con).await.unwrap();
+                con
+            });
+
+        futures::join!(task_a, task_b);
+
+
+        let person_a = InternalPersonEventJournal::replay(&id_a, &mut transaction_a).await?;
+        let person_b = InternalPersonEventJournal::replay(&id_b, &mut transaction_b).await?;
+
+        println!("{:#?}", person_a);
+        println!("{:#?}", person_b);
+
+        transaction_a.rollback().await.map_err(DriverError::from)?;
+        transaction_b.rollback().await.map_err(DriverError::from)?;
 
         Ok(())
     }
