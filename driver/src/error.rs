@@ -67,8 +67,8 @@ impl From<DriverError> for Report<CategorizeDriverError> {
     fn from(e: DriverError) -> Self {
         match e {
             DriverError::Sqlx(r) => Report::new(CategorizeDriverError::External).attach_printable(r),
-            DriverError::Serde(r)        => Report::new(CategorizeDriverError::External).attach_printable(r),
-            DriverError::Redis(r)     => Report::new(CategorizeDriverError::External).attach_printable(r),
+            DriverError::Serde(r) => Report::new(CategorizeDriverError::External).attach_printable(r),
+            DriverError::Redis(r) => Report::new(CategorizeDriverError::External).attach_printable(r),
             _ => Report::new(CategorizeDriverError::Internal(e))
         }
     }
