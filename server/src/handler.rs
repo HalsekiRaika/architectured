@@ -1,18 +1,47 @@
-use application::services::{DependOnCreatePersonService, DependOnDeletePersonService, DependOnUpdatePersonService};
+use std::ops::Deref;
+use std::sync::Arc;
+use application::services::DependOnPersonCommandExecutionService;
 use kernel::interfaces::repository::DependOnPersonRepository;
 use driver::database::PersonDataBase;
+use driver::journal::PersonEventJournal;
+use kernel::interfaces::journal::DependOnPersonManipulationEventJournal;
 use crate::error::ServerError;
 
+pub struct AppModule(Arc<Handler>);
+
+impl AppModule {
+    pub async fn new() -> Result<Self, ServerError> {
+        Ok(Self(Arc::new(Handler::init().await?)))
+    }
+}
+
+impl Clone for AppModule {
+    fn clone(&self) -> Self {
+        Self(self.0.clone())
+    }
+}
+
+impl Deref for AppModule {
+    type Target = Handler;
+    fn deref(&self) -> &Self::Target {
+        Deref::deref(&self.0)
+    }
+}
+
 pub struct Handler {
-    person_db: PersonDataBase
+    person_db: PersonDataBase,
+    person_journal: PersonEventJournal
 }
 
 impl Handler {
-    pub async fn init() -> Result<Self, ServerError> {
+    async fn init() -> Result<Self, ServerError> {
+        let journal_pool = driver::setup_journal_db().await?;
         let redis_pool = driver::setup_redis()?;
+
 
         Ok(Self {
             person_db: PersonDataBase::new(redis_pool),
+            person_journal: PersonEventJournal::new(journal_pool),
         })
     }
 }
@@ -24,23 +53,16 @@ impl DependOnPersonRepository for Handler {
     }
 }
 
-impl DependOnCreatePersonService for Handler {
-    type CreatePersonService = Self;
-    fn create_person_service(&self) -> &Self::CreatePersonService {
-        self
+impl DependOnPersonManipulationEventJournal for Handler {
+    type PersonManipulationEventJournal = PersonEventJournal;
+    fn person_manipulation_event_journal(&self) -> &Self::PersonManipulationEventJournal {
+        &self.person_journal
     }
 }
 
-impl DependOnUpdatePersonService for Handler {
-    type UpdatePersonService = Self;
-    fn update_person_service(&self) -> &Self::UpdatePersonService {
-        self
-    }
-}
-
-impl DependOnDeletePersonService for Handler {
-    type DeletePersonService = Self;
-    fn delete_person_service(&self) -> &Self::DeletePersonService {
+impl DependOnPersonCommandExecutionService for Handler {
+    type PersonCommandExecutionService = Self;
+    fn person_command_execution_service(&self) -> &Self::PersonCommandExecutionService {
         self
     }
 }
