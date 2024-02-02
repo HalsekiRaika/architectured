@@ -6,10 +6,21 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
+axum = { version = "0.7", features = ["json", "tracing"] }
+axum-extra = { version = "0.9", features = ["typed-header", "query"] }
 tokio = { version = "1", features = ["full"] }
+
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+
+error-stack = { version = "0.4", features = ["spantrace"] }
 
 anyhow = { workspace = true }
 thiserror = { workspace = true }
+
+tracing = "0.1"
+tracing-appender = "0.2"
+tracing-subscriber = { version = "0.3", features = ["registry", "fmt", "env-filter"] }
 
 application = { path = "../application" }
 driver = { path = "../driver" }
