@@ -19,27 +19,25 @@ impl PersonEventJournal {
 
 
 impl PersonManipulationEventJournal for PersonEventJournal {
-    type Error = Report<KernelError>;
-
-    async fn create(&self, event: &PersonManipulationEvent) -> Result<(), Self::Error> {
+    async fn create(&self, event: &PersonManipulationEvent) -> Result<(), Report<KernelError>> {
         let mut con = self.pool.acquire().await.map_err(DriverError::from)?;
         InternalPersonEventJournal::create(event, &mut con).await?;
         Ok(())
     }
 
-    async fn append(&self, id: &PersonId, event: &PersonManipulationEvent) -> Result<(), Self::Error> {
+    async fn append(&self, id: &PersonId, event: &PersonManipulationEvent) -> Result<(), Report<KernelError>> {
         let mut con = self.pool.begin().await.map_err(DriverError::from)?;
         InternalPersonEventJournal::append(id, event, &mut con).await?;
         Ok(())
     }
 
-    async fn replay(&self, id: &PersonId) -> Result<Envelope<Person>, Self::Error> {
+    async fn replay(&self, id: &PersonId) -> Result<Envelope<Person>, Report<KernelError>> {
         let mut con = self.pool.acquire().await.map_err(DriverError::from)?;
         let replay = InternalPersonEventJournal::replay(id, &mut con).await?;
         Ok(replay)
     }
 
-    async fn resume(&self, envelope: &mut Envelope<Person>) -> Result<(), Self::Error> {
+    async fn resume(&self, envelope: &mut Envelope<Person>) -> Result<(), Report<KernelError>> {
         let mut con = self.pool.acquire().await.map_err(DriverError::from)?;
         InternalPersonEventJournal::resume(envelope, &mut con).await?;
         Ok(())
