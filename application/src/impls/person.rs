@@ -1,14 +1,5 @@
-use kernel::interfaces::repository::DependOnPersonRepository;
-use crate::services::{CreatePersonService, DeletePersonService, UpdatePersonService};
+use kernel::interfaces::journal::DependOnPersonManipulationEventJournal;
+use crate::services::PersonCommandExecutionService;
 
-// Default Impl
-impl<T> CreatePersonService for T
-    where T: DependOnPersonRepository {}
-
-// Default Impl
-impl<T> UpdatePersonService for T
-    where T: DependOnPersonRepository {}
-
-// Default Impl
-impl<T> DeletePersonService for T
-    where T: DependOnPersonRepository {}
+impl<T> PersonCommandExecutionService for T
+    where T: DependOnPersonManipulationEventJournal {}
