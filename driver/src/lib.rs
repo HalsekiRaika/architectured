@@ -1,8 +1,9 @@
 pub mod error;
 pub mod database;
 
+pub mod journal;
+
 mod init;
-mod journal;
 
 pub use self::{
     init::*
