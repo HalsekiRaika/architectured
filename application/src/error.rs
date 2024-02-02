@@ -1,22 +1,22 @@
+use std::fmt::{Display, Formatter};
+use std::ops::{Not, Shl};
+use error_stack::{Context, Report};
 use kernel::error::KernelError;
 
-#[derive(Debug, thiserror::Error)]
+#[derive(Debug)]
 pub enum ApplicationError {
-    #[error("cannot find `{value}:{entity}` in the following {method}.")]
-    NotFound {
-        entity: &'static str,
-        method: &'static str,
-        value: String
-    },
-    #[error(transparent)]
-    Other(anyhow::Error)
+    Driver,
+    Kernel
 }
 
-impl From<KernelError> for ApplicationError {
-    fn from(value: KernelError) -> Self {
-        match value {
-            KernelError::Driver(e)
-                => Self::Other(e)
+impl Display for ApplicationError {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(f, "(application): ")?;
+        match self {
+            ApplicationError::Driver => write!(f, "from driver error."),
+            ApplicationError::Kernel => write!(f, "from kernel error."),
         }
     }
 }
+
+impl Context for ApplicationError {}
