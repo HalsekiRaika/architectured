@@ -1,3 +1,4 @@
+use std::fmt::{Display, Formatter};
 use serde::{Deserialize, Serialize};
 use crate::entities::{Person, PersonId, PersonName};
 use crate::event::Applier;
@@ -11,6 +12,12 @@ pub enum PersonManipulationEvent {
     Renamed {
         name: PersonName,
     },
+}
+
+impl Display for PersonManipulationEvent {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(f, "PersonManipulation :: {:?}", self)
+    }
 }
 
 impl Applier<PersonManipulationEvent> for Person {

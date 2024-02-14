@@ -11,6 +11,7 @@ pub enum DriverError {
     Sqlx(Report<compat::SqlXCompatError>),
     Serde(Report<serde_json::Error>),
     Redis(Report<deadpool_redis::redis::RedisError>),
+    Kafka(Report<rdkafka::error::KafkaError>),
     DeadPool,
     Initialize,
     Internal(Report<InternalError>),
@@ -25,6 +26,7 @@ impl Display for DriverError {
             DriverError::Internal(e) => Display::fmt(e, f),
             DriverError::Serde(e) => Display::fmt(e, f),
             DriverError::Redis(e) => Display::fmt(e, f),
+            DriverError::Kafka(e) => Display::fmt(e, f),
             DriverError::DeadPool => write!(f, "describe me"),
             DriverError::Initialize => write!(f, "describe me"),
             DriverError::Other => write!(f, "describe me")
@@ -60,6 +62,12 @@ impl From<serde_json::Error> for DriverError {
 impl From<deadpool_redis::redis::RedisError> for DriverError {
     fn from(e: deadpool_redis::redis::RedisError) -> Self {
         Self::Redis(Report::new(e))
+    }
+}
+
+impl From<rdkafka::error::KafkaError> for DriverError {
+    fn from(e: rdkafka::error::KafkaError) -> Self {
+        Self::Kafka(Report::new(e))
     }
 }
 

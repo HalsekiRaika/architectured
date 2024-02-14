@@ -14,3 +14,8 @@ orbital = "0.1"
 error-stack = { version = "0.4", features = [] }
 
 kernel = { path = "../kernel" }
+
+[features]
+prelude = []
+interfaces = []
+default = ["prelude", "interfaces"]

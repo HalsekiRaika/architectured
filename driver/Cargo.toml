@@ -14,7 +14,10 @@ async-trait = "0.1"
 anyhow = { workspace = true }
 thiserror = { workspace = true }
 error-stack = "0.4"
+rdkafka = { version = "0.36", features = ["cmake-build", "tracing"] }
 
+# Only import gateways
+application = { path = "../application", default-features = false, features = ["interfaces"] }
 kernel = { path = "../kernel" }
 
 [dependencies.sqlx]

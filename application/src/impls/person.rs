@@ -1,5 +1,5 @@
 use kernel::interfaces::journal::DependOnPersonManipulationEventJournal;
-use crate::services::PersonCommandExecutionService;
+use crate::service::PersonCommandExecutionService;
 
 impl<T> PersonCommandExecutionService for T
     where T: DependOnPersonManipulationEventJournal {}

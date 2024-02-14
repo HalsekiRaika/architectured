@@ -1,9 +1,9 @@
 use std::ops::Deref;
 use std::sync::Arc;
 use application::services::DependOnPersonCommandExecutionService;
-use kernel::interfaces::repository::DependOnPersonRepository;
 use driver::database::PersonDataBase;
 use driver::journal::PersonEventJournal;
+use kernel::interfaces::repository::DependOnPersonRepository;
 use kernel::interfaces::journal::DependOnPersonManipulationEventJournal;
 use crate::error::ServerError;
 
