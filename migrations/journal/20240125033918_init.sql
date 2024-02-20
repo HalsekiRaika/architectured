@@ -3,7 +3,7 @@ CREATE TABLE streams(
 );
 
 CREATE TABLE events(
-  id      UUID    NOT NULL DEFAULT gen_random_uuid(), -- Auto increment
+  id      UUID    NOT NULL DEFAULT gen_random_uuid(), -- Auto Generated
   stream  UUID    NOT NULL,
   version INTEGER NOT NULL CHECK ( version > 0 ),
   event   JSON    NOT NULL,

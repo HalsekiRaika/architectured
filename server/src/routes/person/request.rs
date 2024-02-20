@@ -1,7 +1,7 @@
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 use crate::Intake;
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Deserialize)]
 pub struct CreateRequest {
     name: String
 }

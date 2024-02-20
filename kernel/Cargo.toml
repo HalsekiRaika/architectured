@@ -7,6 +7,7 @@ edition = "2021"
 
 [dependencies]
 uuid = { version = "1", features = ["serde", "v4"] }
+time = { version = "0.3", features = ["serde"] }
 
 rand = "0.8"
 destructure = "0.5.5"

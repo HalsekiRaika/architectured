@@ -16,9 +16,9 @@ use self::response::Presenter;
 use self::error::PersonManipulationError;
 
 pub async fn person(
+    State(handler): State<AppModule>,
     Json(req): Json<CreateRequest>,
-    State(handler): State<AppModule>
-) -> Result<StatusCode, PersonManipulationError> {
+) -> Result<impl IntoResponse, PersonManipulationError> {
     // Controller::new(Transformer, Presenter)
     //     .intake(req)
     //     .handle(|cmd| async {
@@ -27,9 +27,5 @@ pub async fn person(
     //             .await
     //     })
     //     .await?;
-    todo!()
-}
-
-pub async fn person_act() -> impl IntoResponse {
-
+    Ok(StatusCode::CREATED)
 }

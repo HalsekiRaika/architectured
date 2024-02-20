@@ -2,6 +2,7 @@ use deadpool_redis::{Config, Pool as RedisPool};
 use error_stack::{Report, ResultExt};
 use sqlx::{Pool, Postgres};
 use sqlx::postgres::PgPoolOptions;
+use crate::database::PgPool;
 use crate::error::DriverError;
 
 pub fn setup_redis() -> Result<RedisPool, Report<DriverError>> {
@@ -10,7 +11,7 @@ pub fn setup_redis() -> Result<RedisPool, Report<DriverError>> {
         .change_context_lazy(|| DriverError::Initialize)
 }
 
-pub async fn setup_query_db() -> Result<Pool<Postgres>, DriverError> {
+pub async fn setup_query_db() -> Result<PgPool, DriverError> {
     const KEY: &str = "QUERY_DATABASE_URL";
 
     let url = dotenvy::var(KEY)
@@ -24,10 +25,10 @@ pub async fn setup_query_db() -> Result<Pool<Postgres>, DriverError> {
         .run(&pool)
         .await?;
 
-    Ok(pool)
+    Ok(PgPool::new(pool))
 }
 
-pub async fn setup_journal_db() -> Result<Pool<Postgres>, DriverError> {
+pub async fn setup_journal_db() -> Result<PgPool, DriverError> {
     const KEY: &str = "JOURNAL_DATABASE_URL";
 
     let url = dotenvy::var(KEY)
@@ -41,5 +42,5 @@ pub async fn setup_journal_db() -> Result<Pool<Postgres>, DriverError> {
         .run(&pool)
         .await?;
 
-    Ok(pool)
+    Ok(PgPool::new(pool))
 }

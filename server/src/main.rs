@@ -1,6 +1,6 @@
 use std::net::SocketAddr;
 use axum::Router;
-use axum::routing::get;
+use axum::routing::post;
 use tracing_subscriber::{Layer, layer::SubscriberExt, util::SubscriberInitExt};
 use server::error::{ServerError, StackTrace};
 use server::AppModule;
@@ -21,11 +21,11 @@ async fn main() -> Result<(), StackTrace> {
             .with_filter(tracing_subscriber::filter::LevelFilter::DEBUG))
         .init();
 
-    let _app = AppModule::new().await?;
+    let app = AppModule::new().await?;
 
     let router = Router::new()
-        .route("/person", get(routes::person).post(routes::person_act))
-        .with_state(_app);
+        .route("/person", post(routes::person))
+        .with_state(app);
 
     let bind = SocketAddr::from(([0, 0, 0 ,0], 8080));
     let tcpl = tokio::net::TcpListener::bind(bind).await

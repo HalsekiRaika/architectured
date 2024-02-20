@@ -1,45 +1,36 @@
 use error_stack::Report;
-use sqlx::{PgConnection, Pool, Postgres};
+use sqlx::PgConnection;
 use kernel::error::KernelError;
 use kernel::interfaces::journal::{Envelope, PersonManipulationEventJournal};
 use kernel::prelude::entities::{Person, PersonId};
 use kernel::prelude::events::{Applier, PersonManipulationEvent};
+use crate::database::PgTransaction;
 use crate::error::DriverError;
 use crate::error::internal::InternalError;
 
-pub struct PersonEventJournal {
-    pool: Pool<Postgres>
-}
-
-impl PersonEventJournal {
-    pub fn new(pool: Pool<Postgres>) -> PersonEventJournal {
-        Self { pool }
-    }
-}
-
+#[derive(Default)]
+pub struct PersonEventJournal;
 
 impl PersonManipulationEventJournal for PersonEventJournal {
-    async fn create(&self, event: &PersonManipulationEvent) -> Result<(), Report<KernelError>> {
-        let mut con = self.pool.acquire().await.map_err(DriverError::from)?;
-        InternalPersonEventJournal::create(event, &mut con).await?;
+    type Transaction = PgTransaction;
+    
+    async fn create(&self, event: &PersonManipulationEvent, con: &mut Self::Transaction) -> Result<(), Report<KernelError>> {
+        InternalPersonEventJournal::create(event, con).await?;
         Ok(())
     }
 
-    async fn append(&self, id: &PersonId, event: &PersonManipulationEvent) -> Result<(), Report<KernelError>> {
-        let mut con = self.pool.begin().await.map_err(DriverError::from)?;
-        InternalPersonEventJournal::append(id, event, &mut con).await?;
+    async fn append(&self, id: &PersonId, event: &PersonManipulationEvent, con: &mut Self::Transaction) -> Result<(), Report<KernelError>> {
+        InternalPersonEventJournal::append(id, event, con).await?;
         Ok(())
     }
 
-    async fn replay(&self, id: &PersonId) -> Result<Envelope<Person>, Report<KernelError>> {
-        let mut con = self.pool.acquire().await.map_err(DriverError::from)?;
-        let replay = InternalPersonEventJournal::replay(id, &mut con).await?;
+    async fn replay(&self, id: &PersonId, con: &mut Self::Transaction) -> Result<Envelope<Person>, Report<KernelError>> {
+        let replay = InternalPersonEventJournal::replay(id, con).await?;
         Ok(replay)
     }
 
-    async fn resume(&self, envelope: &mut Envelope<Person>) -> Result<(), Report<KernelError>> {
-        let mut con = self.pool.acquire().await.map_err(DriverError::from)?;
-        InternalPersonEventJournal::resume(envelope, &mut con).await?;
+    async fn resume(&self, envelope: &mut Envelope<Person>, con: &mut Self::Transaction) -> Result<(), Report<KernelError>> {
+        InternalPersonEventJournal::resume(envelope, con).await?;
         Ok(())
     }
 }
@@ -166,15 +157,15 @@ impl InternalPersonEventJournal {
 mod test {
     use error_stack::Report;
     use futures::StreamExt;
-    use sqlx::{Pool, Postgres};
     use tokio::time::Instant;
     use kernel::prelude::entities::{PersonId, PersonName};
     use kernel::prelude::events::PersonManipulationEvent;
+    use crate::database::PgPool;
     use crate::error::DriverError;
     use crate::journal::person::InternalPersonEventJournal;
     use crate::setup_journal_db;
     
-    async fn create_pool() -> Result<Pool<Postgres>, DriverError> {
+    async fn create_pool() -> Result<PgPool, DriverError> {
         let pool = setup_journal_db().await?;
         Ok(pool)
     }

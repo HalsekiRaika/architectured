@@ -1,7 +1,5 @@
 use std::fmt::{Display, Formatter};
-use std::ops::{Not, Shl};
-use error_stack::{Context, Report};
-use kernel::error::KernelError;
+use error_stack::Context;
 
 #[derive(Debug)]
 pub enum ApplicationError {

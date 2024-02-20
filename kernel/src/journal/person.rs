@@ -3,12 +3,18 @@ use error_stack::Report;
 use crate::entities::{Person, PersonId};
 use crate::error::KernelError;
 use crate::event::PersonManipulationEvent;
+use crate::io::{AcquireTransaction, DependOnAcquireTransaction, Transaction};
 use crate::journal::Envelope;
 
-#[orbital::export_service]
 pub trait PersonManipulationEventJournal: 'static + Sync + Send {
-    fn create(&self, event: &PersonManipulationEvent) -> impl Future<Output = Result<(), Report<KernelError>>> + Send;
-    fn append(&self, id: &PersonId, event: &PersonManipulationEvent) -> impl Future<Output = Result<(), Report<KernelError>>> + Send;
-    fn replay(&self, id: &PersonId) -> impl Future<Output = Result<Envelope<Person>, Report<KernelError>>> + Send;
-    fn resume(&self, envelope: &mut Envelope<Person>) -> impl Future<Output = Result<(), Report<KernelError>>> + Send;
+    type Transaction: Transaction;
+    fn create(&self, event: &PersonManipulationEvent, con: &mut Self::Transaction) -> impl Future<Output = Result<(), Report<KernelError>>> + Send;
+    fn append(&self, id: &PersonId, event: &PersonManipulationEvent, con: &mut Self::Transaction) -> impl Future<Output = Result<(), Report<KernelError>>> + Send;
+    fn replay(&self, id: &PersonId, con: &mut Self::Transaction) -> impl Future<Output = Result<Envelope<Person>, Report<KernelError>>> + Send;
+    fn resume(&self, envelope: &mut Envelope<Person>, con: &mut Self::Transaction) -> impl Future<Output = Result<(), Report<KernelError>>> + Send;
+}
+
+pub trait DependOnPersonManipulationEventJournal: 'static + Sync + Send + DependOnAcquireTransaction {
+    type PersonManipulationEventJournal: PersonManipulationEventJournal<Transaction=<Self::AcquireTransaction as AcquireTransaction>::Transaction>;
+    fn person_manipulation_event_journal(&self) -> Self::PersonManipulationEventJournal;
 }

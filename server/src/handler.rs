@@ -1,9 +1,9 @@
 use std::ops::Deref;
 use std::sync::Arc;
 use application::services::DependOnPersonCommandExecutionService;
-use driver::database::PersonDataBase;
+use driver::database::PgPool;
 use driver::journal::PersonEventJournal;
-use kernel::interfaces::repository::DependOnPersonRepository;
+use kernel::interfaces::io::DependOnAcquireTransaction;
 use kernel::interfaces::journal::DependOnPersonManipulationEventJournal;
 use crate::error::ServerError;
 
@@ -29,34 +29,32 @@ impl Deref for AppModule {
 }
 
 pub struct Handler {
-    person_db: PersonDataBase,
-    person_journal: PersonEventJournal
+    pgpool: PgPool
 }
 
 impl Handler {
     async fn init() -> Result<Self, ServerError> {
-        let journal_pool = driver::setup_journal_db().await?;
-        let redis_pool = driver::setup_redis()?;
-
+        let pgpool = driver::setup_journal_db().await?;
 
         Ok(Self {
-            person_db: PersonDataBase::new(redis_pool),
-            person_journal: PersonEventJournal::new(journal_pool),
+            pgpool
         })
     }
 }
 
-impl DependOnPersonRepository for Handler {
-    type PersonRepository = PersonDataBase;
-    fn person_repository(&self) -> &Self::PersonRepository {
-        &self.person_db
+
+impl DependOnAcquireTransaction for Handler {
+    type AcquireTransaction = PgPool;
+    
+    fn acquire_transaction(&self) -> &Self::AcquireTransaction {
+        &self.pgpool
     }
 }
 
 impl DependOnPersonManipulationEventJournal for Handler {
     type PersonManipulationEventJournal = PersonEventJournal;
-    fn person_manipulation_event_journal(&self) -> &Self::PersonManipulationEventJournal {
-        &self.person_journal
+    fn person_manipulation_event_journal(&self) -> PersonEventJournal {
+        PersonEventJournal
     }
 }
 

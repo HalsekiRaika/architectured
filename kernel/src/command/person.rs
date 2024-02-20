@@ -7,7 +7,8 @@ use crate::event::PersonManipulationEvent;
 #[derive(Debug, Clone)]
 pub enum PersonManipulationCommand {
     Create { name: String },
-    Rename { id: Uuid, name: String }
+    Rename { id: Uuid, name: String },
+    Rental { book: Uuid }
 }
 
 impl Publication<PersonManipulationEvent> for PersonManipulationCommand {
@@ -25,6 +26,7 @@ impl Publication<PersonManipulationEvent> for PersonManipulationCommand {
                     name: PersonName::new(name),
                 }
             }
+            _ => return Err(KernelError::EventPublish)
         })
     }
 }

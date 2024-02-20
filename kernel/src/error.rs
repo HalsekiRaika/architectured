@@ -3,15 +3,16 @@ use error_stack::Context;
 
 #[derive(Debug)]
 pub enum KernelError {
-    
     Driver,
+    EventPublish
 }
 
 impl Display for KernelError {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         write!(f, "(kernel): ")?;
         match self {
-            KernelError::Driver => write!(f, "driver error.")
+            KernelError::Driver => write!(f, "driver error."),
+            KernelError::EventPublish => write!(f, "attempted to issue to non-supported Event(s).")
         }
     }
 }

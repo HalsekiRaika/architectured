@@ -5,6 +5,7 @@ pub mod error;
 mod journal;
 mod event;
 mod command;
+mod io;
 
 #[cfg(feature = "prelude")]
 pub mod prelude {
@@ -29,5 +30,9 @@ pub mod interfaces {
 
     pub mod journal {
         pub use crate::journal::*;
+    }
+    
+    pub mod io {
+        pub use crate::io::*;
     }
 }
