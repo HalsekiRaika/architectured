@@ -1,6 +1,8 @@
 mod person;
+mod book;
 
 pub use self::person::*;
+pub use self::book::*;
 
 
 use std::ops::{Deref, DerefMut};

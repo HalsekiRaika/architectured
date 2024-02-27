@@ -14,7 +14,7 @@ use destructure::{Destructure, Mutation};
 use serde::{Deserialize, Serialize};
 
 
-#[derive(Debug, Clone, Deserialize, Serialize, Destructure, Mutation)]
+#[derive(Debug, Clone, Default, Deserialize, Serialize, Destructure, Mutation)]
 pub struct Book {
     id: BookId,
     title: Title,

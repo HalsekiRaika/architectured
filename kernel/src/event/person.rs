@@ -1,10 +1,10 @@
 use std::fmt::{Display, Formatter};
 use serde::{Deserialize, Serialize};
-use crate::entities::{Person, PersonId, PersonName};
+use crate::entities::{BookId, Person, PersonId, PersonName};
 use crate::event::Applier;
 
 #[derive(Debug, Clone, Deserialize, Serialize)]
-pub enum PersonManipulationEvent {
+pub enum PersonEvent {
     Created {
         id: PersonId,
         name: PersonName,
@@ -12,28 +12,44 @@ pub enum PersonManipulationEvent {
     Renamed {
         name: PersonName,
     },
+    Rented {
+        id: BookId
+    },
+    Returned {
+        id: BookId
+    }
 }
 
-impl Display for PersonManipulationEvent {
+impl Display for PersonEvent {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         write!(f, "PersonManipulation :: {:?}", self)
     }
 }
 
-impl Applier<PersonManipulationEvent> for Person {
-    fn apply(&mut self, event: PersonManipulationEvent) {
+impl Applier<PersonEvent> for Person {
+    fn apply(&mut self, event: PersonEvent) {
         match event {
-            PersonManipulationEvent::Created { id, name } => {
+            PersonEvent::Created { id, name } => {
                 self.substitute(|person| {
                     *person.id = id;
                     *person.name = name;
                 })
             },
-            PersonManipulationEvent::Renamed { name } => {
+            PersonEvent::Renamed { name } => {
                 self.substitute(|person| {
                     *person.name = name;
                 })
             },
+            PersonEvent::Rented { .. } => {
+                self.substitute(|person| {
+                    person.rental.apply(event);
+                })
+            }
+            PersonEvent::Returned { .. } => {
+                self.substitute(|person| {
+                    person.rental.apply(event)
+                })
+            }
         }
     }
 }
@@ -44,11 +60,11 @@ mod test {
     use error_stack::{Report, ResultExt};
     use crate::entities::{PersonId, PersonName};
     use crate::error::test::AnyKernelError;
-    use crate::event::PersonManipulationEvent;
+    use crate::event::PersonEvent;
     
     #[test]
     fn serialize() -> Result<(), Report<AnyKernelError>> {
-        let ev = PersonManipulationEvent::Created {
+        let ev = PersonEvent::Created {
             id: PersonId::default(),
             name: PersonName::new("test_man")
         };

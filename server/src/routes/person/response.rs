@@ -13,11 +13,11 @@ pub struct CreatedResponse {
 
 pub struct Presenter;
 
-impl Exhaust<kernel::prelude::events::PersonManipulationEvent> for Presenter {
+impl Exhaust<kernel::prelude::events::PersonEvent> for Presenter {
     type To = CreatedResponse;
-    fn emit(&self, input: kernel::prelude::events::PersonManipulationEvent) -> Self::To {
+    fn emit(&self, input: kernel::prelude::events::PersonEvent) -> Self::To {
         match input {
-            kernel::prelude::events::PersonManipulationEvent::Created { id, name } => Self::To {
+            kernel::prelude::events::PersonEvent::Created { id, name } => Self::To {
                 id, name
             },
 

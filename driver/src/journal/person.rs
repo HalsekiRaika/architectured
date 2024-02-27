@@ -3,23 +3,23 @@ use sqlx::PgConnection;
 use kernel::error::KernelError;
 use kernel::interfaces::journal::{Envelope, PersonManipulationEventJournal};
 use kernel::prelude::entities::{Person, PersonId};
-use kernel::prelude::events::{Applier, PersonManipulationEvent};
+use kernel::prelude::events::{Applier, PersonEvent};
 use crate::database::PgTransaction;
 use crate::error::DriverError;
 use crate::error::internal::InternalError;
 
 #[derive(Default)]
-pub struct PersonEventJournal;
+pub struct PersonEventRecord;
 
-impl PersonManipulationEventJournal for PersonEventJournal {
+impl PersonManipulationEventJournal for PersonEventRecord {
     type Transaction = PgTransaction;
     
-    async fn create(&self, event: &PersonManipulationEvent, con: &mut Self::Transaction) -> Result<(), Report<KernelError>> {
+    async fn create(&self, event: &PersonEvent, con: &mut Self::Transaction) -> Result<(), Report<KernelError>> {
         InternalPersonEventJournal::create(event, con).await?;
         Ok(())
     }
 
-    async fn append(&self, id: &PersonId, event: &PersonManipulationEvent, con: &mut Self::Transaction) -> Result<(), Report<KernelError>> {
+    async fn append(&self, id: &PersonId, event: &PersonEvent, con: &mut Self::Transaction) -> Result<(), Report<KernelError>> {
         InternalPersonEventJournal::append(id, event, con).await?;
         Ok(())
     }
@@ -38,12 +38,13 @@ impl PersonManipulationEventJournal for PersonEventJournal {
 
 pub(crate) struct InternalPersonEventJournal;
 
+// noinspection DuplicatedCode
 impl InternalPersonEventJournal {
     pub(crate) async fn create(
-        event: &PersonManipulationEvent,
+        event: &PersonEvent,
         con: &mut PgConnection
     ) -> Result<(), DriverError> {
-        let PersonManipulationEvent::Created { id, .. } = event else {
+        let PersonEvent::Created { id, .. } = event else {
             return Err(InternalError::Constraint("this event containing data should be for create stream.").into())
         };
         
@@ -70,7 +71,7 @@ impl InternalPersonEventJournal {
 
     pub(crate) async fn append(
         stream: &PersonId,
-        event: &PersonManipulationEvent,
+        event: &PersonEvent,
         con: &mut PgConnection
     ) -> Result<(), DriverError> {
         // language=SQL
@@ -107,7 +108,7 @@ impl InternalPersonEventJournal {
 
         let events = events.into_iter()
             .map(serde_json::from_value)
-            .collect::<Result<Vec<PersonManipulationEvent>, _>>()?;
+            .collect::<Result<Vec<PersonEvent>, _>>()?;
 
         let mut person = Person::default();
 
@@ -140,7 +141,7 @@ impl InternalPersonEventJournal {
 
         resume.into_iter()
             .map(serde_json::from_value)
-            .collect::<Result<Vec<PersonManipulationEvent>, _>>()?
+            .collect::<Result<Vec<PersonEvent>, _>>()?
             .into_iter()
             .for_each(|ev| {
                 person.apply(ev)
@@ -159,7 +160,7 @@ mod test {
     use futures::StreamExt;
     use tokio::time::Instant;
     use kernel::prelude::entities::{PersonId, PersonName};
-    use kernel::prelude::events::PersonManipulationEvent;
+    use kernel::prelude::events::PersonEvent;
     use crate::database::PgPool;
     use crate::error::DriverError;
     use crate::journal::person::InternalPersonEventJournal;
@@ -173,8 +174,8 @@ mod test {
     #[tokio::test]
     async fn append_event() -> Result<(), Report<DriverError>> {
         let id = PersonId::default();
-        let ev_1 = PersonManipulationEvent::Created { id, name: PersonName::new("new account 1") };
-        let ev_2 = PersonManipulationEvent::Renamed { name: PersonName::new("test man") };
+        let ev_1 = PersonEvent::Created { id, name: PersonName::new("new account 1") };
+        let ev_2 = PersonEvent::Renamed { name: PersonName::new("test man") };
 
         let mut transaction = create_pool().await?
             .begin().await
@@ -200,9 +201,9 @@ mod test {
 
         let pool = create_pool().await?;
 
-        let a: Vec<PersonManipulationEvent> = futures::stream::iter(1..=2500)
+        let a: Vec<PersonEvent> = futures::stream::iter(1..=2500)
             .map(|i| async move {
-                PersonManipulationEvent::Renamed { name: PersonName::new(format!("test man type.{i}")) }
+                PersonEvent::Renamed { name: PersonName::new(format!("test man type.{i}")) }
             })
             .buffered(1)
             .collect::<_>().await;
@@ -212,7 +213,7 @@ mod test {
         let pool_a = pool.clone();
         let mut transaction_a = pool_a.begin().await.map_err(DriverError::from)?;
 
-        let ev_1 = PersonManipulationEvent::Created { id: id_a, name: PersonName::new("new account 1") };
+        let ev_1 = PersonEvent::Created { id: id_a, name: PersonName::new("new account 1") };
         InternalPersonEventJournal::create(&ev_1, &mut transaction_a).await?;
 
         let task_a = futures::stream::iter(a)
@@ -224,7 +225,7 @@ mod test {
         let pool_b = pool.clone();
         let mut transaction_b = pool_b.begin().await.map_err(DriverError::from)?;
 
-        let ev_2 = PersonManipulationEvent::Created { id: id_b, name: PersonName::new("new account 1") };
+        let ev_2 = PersonEvent::Created { id: id_b, name: PersonName::new("new account 1") };
         InternalPersonEventJournal::create(&ev_2, &mut transaction_b).await?;
 
         let task_b = futures::stream::iter(b)
@@ -251,8 +252,8 @@ mod test {
     #[tokio::test]
     async fn replay_event() -> Result<(), Report<DriverError>> {
         let id = PersonId::default();
-        let ev_1 = PersonManipulationEvent::Created { id, name: PersonName::new("new account 1") };
-        let ev_2 = PersonManipulationEvent::Renamed { name: PersonName::new("test man") };
+        let ev_1 = PersonEvent::Created { id, name: PersonName::new("new account 1") };
+        let ev_2 = PersonEvent::Renamed { name: PersonName::new("test man") };
 
         let mut transaction = create_pool().await?
             .begin().await
@@ -263,7 +264,7 @@ mod test {
 
         futures::stream::iter(1..10000)
             .map(|i| async move {
-                PersonManipulationEvent::Renamed { name: PersonName::new(format!("test man type.{i}")) }
+                PersonEvent::Renamed { name: PersonName::new(format!("test man type.{i}")) }
             })
             .buffered(1)
             .fold(&mut transaction, |con, ev| async move {
@@ -291,7 +292,7 @@ mod test {
     #[tokio::test]
     async fn resume_event() -> Result<(), Report<DriverError>> {
         let id = PersonId::default();
-        let ev_1 = PersonManipulationEvent::Created { id, name: PersonName::new("new account 1") };
+        let ev_1 = PersonEvent::Created { id, name: PersonName::new("new account 1") };
 
         let mut transaction = create_pool().await?
             .begin().await
@@ -301,7 +302,7 @@ mod test {
 
         futures::stream::iter(1..1000)
             .map(|i| async move {
-                PersonManipulationEvent::Renamed { name: PersonName::new(format!("test man type.{i}")) }
+                PersonEvent::Renamed { name: PersonName::new(format!("test man type.{i}")) }
             })
             .buffered(1)
             .fold(&mut transaction, |con, ev| async move {
@@ -313,7 +314,7 @@ mod test {
 
         futures::stream::iter(1000..=2000)
             .map(|i| async move {
-                PersonManipulationEvent::Renamed { name: PersonName::new(format!("test man type.{i}")) }
+                PersonEvent::Renamed { name: PersonName::new(format!("test man type.{i}")) }
             })
             .buffered(1)
             .fold(&mut transaction, |con, ev| async move {

@@ -3,7 +3,7 @@ use rdkafka::Message;
 use rdkafka::consumer::{Consumer, StreamConsumer};
 use rdkafka::producer::{FutureProducer, FutureRecord};
 use kernel::prelude::entities::PersonId;
-use kernel::prelude::events::PersonManipulationEvent;
+use kernel::prelude::events::PersonEvent;
 use crate::error::DriverError;
 
 const TOPIC: &str = "person";
@@ -13,7 +13,7 @@ pub(crate) struct InternalPersonCommandProducer;
 impl InternalPersonCommandProducer {
     async fn produce(
         id: &PersonId,
-        event: &PersonManipulationEvent,
+        event: &PersonEvent,
         prod: &FutureProducer
     ) -> Result<(), DriverError> {
         let payload = serde_json::to_string(event)?;
@@ -47,7 +47,7 @@ impl InternalPersonCommandConsumer {
             let viw = msg.payload_view()
                 .transpose()
                 .map_err(|_| DriverError::Other)?;
-            let viw = viw.map(serde_json::from_str::<PersonManipulationEvent>);
+            let viw = viw.map(serde_json::from_str::<PersonEvent>);
 
             let Some(msg) = viw.transpose()? else {
                 continue;
@@ -65,7 +65,7 @@ impl InternalPersonCommandConsumer {
 mod test {
     use error_stack::Report;
     use rdkafka::ClientConfig;
-    use kernel::prelude::commands::{PersonManipulationCommand, Publication};
+    use kernel::prelude::commands::{PersonManipulationCommand, Publish};
     use super::*;
 
     fn create_prod_cons() -> Result<(FutureProducer, StreamConsumer), DriverError> {
@@ -87,10 +87,10 @@ mod test {
         let evt = cmd.publish().map_err(|_| DriverError::Other)?;
 
         match evt {
-            PersonManipulationEvent::Created { ref id, .. } => {
+            PersonEvent::Created { ref id, .. } => {
                 InternalPersonCommandProducer::produce(id, &evt, &prod).await?;
             }
-            PersonManipulationEvent::Renamed { .. } => {
+            PersonEvent::Renamed { .. } => {
 
             }
         }

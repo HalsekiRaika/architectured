@@ -1,9 +1,11 @@
 mod person;
+mod book;
 
 pub use self::person::*;
+pub use self::book::*;
 
 
-pub trait Publication<T>: 'static + Sync + Send {
+pub trait Publish<T>: 'static + Sync + Send {
     type Error;
     fn publish(self) -> Result<T, Self::Error>;
 }

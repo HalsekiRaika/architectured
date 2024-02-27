@@ -1,10 +1,10 @@
 use std::ops::Deref;
 use std::sync::Arc;
-use application::services::DependOnPersonCommandExecutionService;
+use application::services::{DependOnBookCommandExecutionService, DependOnPersonCommandExecutionService};
 use driver::database::PgPool;
-use driver::journal::PersonEventJournal;
+use driver::journal::{BookEventRecord, PersonEventRecord};
 use kernel::interfaces::io::DependOnAcquireTransaction;
-use kernel::interfaces::journal::DependOnPersonManipulationEventJournal;
+use kernel::interfaces::journal::{DependOnBookEventJournal, DependOnPersonManipulationEventJournal};
 use crate::error::ServerError;
 
 pub struct AppModule(Arc<Handler>);
@@ -52,15 +52,30 @@ impl DependOnAcquireTransaction for Handler {
 }
 
 impl DependOnPersonManipulationEventJournal for Handler {
-    type PersonManipulationEventJournal = PersonEventJournal;
-    fn person_manipulation_event_journal(&self) -> PersonEventJournal {
-        PersonEventJournal
+    type PersonManipulationEventJournal = PersonEventRecord;
+    fn person_manipulation_event_journal(&self) -> PersonEventRecord {
+        PersonEventRecord
     }
+}
+
+impl DependOnBookEventJournal for Handler {
+    type BookEventJournal = BookEventRecord;
+    fn book_event_journal(&self) -> BookEventRecord {
+        BookEventRecord
+    }
+
 }
 
 impl DependOnPersonCommandExecutionService for Handler {
     type PersonCommandExecutionService = Self;
     fn person_command_execution_service(&self) -> &Self::PersonCommandExecutionService {
+        self
+    }
+}
+
+impl DependOnBookCommandExecutionService for Handler {
+    type BookCommandExecutionService = Self;
+    fn book_command_execution_service(&self) -> &Self::BookCommandExecutionService {
         self
     }
 }
