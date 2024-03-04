@@ -43,25 +43,7 @@ pub trait PersonCommandExecutionService: 'static + Sync + Send
                 transaction.commit().await
                     .change_context_lazy(|| ApplicationError::Driver)?;
             }
-            PersonManipulationCommand::Rental { id, book } => {
-                let id = PersonId::new(id);
-                let book = BookId::new(book);
-                let (ev1, ev2) = Publish::<(PersonEvent, BookEvent)>::publish(cmd)
-                    .change_context_lazy(|| ApplicationError::Kernel)?;
-                
-                self.person_manipulation_event_journal()
-                    .append(&id, &ev1, &mut transaction)
-                    .await
-                    .change_context_lazy(|| ApplicationError::Driver)?;
-                
-                self.book_event_journal()
-                    .append(&book, &ev2, &mut transaction)
-                    .await
-                    .change_context_lazy(|| ApplicationError::Driver)?;
-                
-                transaction.commit().await
-                    .change_context_lazy(|| ApplicationError::Driver)?;
-            }
+            PersonManipulationCommand::Rental { id, book } | 
             PersonManipulationCommand::Return { id, book } => {
                 let id = PersonId::new(id);
                 let book = BookId::new(book);

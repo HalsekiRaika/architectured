@@ -19,13 +19,14 @@ pub async fn person(
     State(handler): State<AppModule>,
     Json(req): Json<CreateRequest>,
 ) -> Result<impl IntoResponse, PersonManipulationError> {
-    // Controller::new(Transformer, Presenter)
-    //     .intake(req)
-    //     .handle(|cmd| async {
-    //         handler.person_command_execution_service()
-    //             .execute(cmd)
-    //             .await
-    //     })
-    //     .await?;
+    Controller::new(Transformer, ())
+        .intake(req)
+        .bypass(|cmd| async {
+            handler.person_command_execution_service()
+                .execute(cmd)
+                .await
+        })
+        .await
+        .map_err(|e| PersonManipulationError::Create)?;
     Ok(StatusCode::CREATED)
 }
